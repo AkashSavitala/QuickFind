@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuickFind - Products</title>
+
+    <!-- Google Fonts for improved typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <style>
+        /* Reset some basic styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        /* Header styling */
+        #header {
+            position: relative;
+            width: 100%;
+            height: 60px;
+            background-color: #3498db;
+        }
+
+        #logoutButton {
+            position: absolute;
+            top: 12px;
+            right: 20px;
+            background-color: white;
+            color: #3498db;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        #logoutButton:hover {
+            background-color: #f4f4f4;
+        }
+
+        /* Assistant Button styling */
+        #assistantButton {
+            position: absolute;
+            top: 12px;
+            left: 20px;
+            background-color: white;
+            color: #3498db;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            border: none;
+            font-size: 1rem;
+        }
+
+        #assistantButton:hover {
+            background-color: #f4f4f4;
+        }
+
+        /* Center the search section */
+        #searchSection {
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        #searchBar {
+            width: 400px;
+            padding: 15px;
+            border-radius: 30px;
+            border: 1px solid #ccc;
+            font-size: 1rem;
+        }
+
+        #searchBar:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        button {
+            padding: 15px 30px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-left: 10px;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        /* Product grid layout for 2 columns */
+        #products {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            padding: 40px;
+            justify-items: center;
+        }
+
+        .product {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 250px;
+        }
+
+        .product img {
+            width: 100%;
+            border-radius: 10px;
+        }
+
+        .product h3 {
+            margin: 10px 0;
+            font-size: 1.2rem;
+            color: #2c3e50;
+        }
+
+        .product p {
+            margin-bottom: 10px;
+            color: #7f8c8d;
+        }
+
+        .product a {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        .product a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive layout for smaller screens */
+        @media (max-width: 768px) {
+            #products {
+                grid-template-columns: 1fr;
+            }
+
+            #searchBar {
+                width: 100%;
+            }
+
+            button {
+                margin-top: 10px;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="header">
+        <button id="assistantButton" onclick="openAssistant()">Talk to an Assistant</button>
+        <button id="logoutButton" onclick="logout()">Logout</button>
+    </div>
+
+    <div id="searchSection">
+        <input type="text" id="searchBar" placeholder="Search for products">
+        <button onclick="search()">Search</button>
+    </div>
+
+    <div id="products">
+        <!-- Product listings will be inserted here -->
+    </div>
+
+    <!-- Script for logout and search functionality -->
+    <script>
+        const apiBaseUrl = "https://quickfind-8d9ae.web.app/api";
+
+        // Redirect to login page if the user is not logged in
+        window.onload = function() {
+            const userId = localStorage.getItem('userId');
+            if (!userId) {
+                window.location.href = 'signIn.html'; // Redirect to login if not logged in
+            }
+        }
+
+        // Logout function
+        function logout() {
+            localStorage.removeItem('userId');  // Clear stored user data
+            window.location.href = 'signIn.html'; // Redirect to the login page
+        }
+
+        async function search() {
+            const query = document.getElementById('searchBar').value;
+
+            if (!query) {
+                alert('Please enter a search term.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${apiBaseUrl}/products/ebay?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+
+                const productList = document.getElementById('products');
+                productList.innerHTML = ''; // Clear previous results
+
+                // Display fetched products
+                if (data && data.itemSummaries) {
+                    data.itemSummaries.forEach(item => {
+                        const productDiv = document.createElement('div');
+                        productDiv.classList.add('product');
+                        productDiv.innerHTML = `
+                            <img src="${item.image.imageUrl}" alt="${item.title}">
+                            <h3>${item.title}</h3>
+                            <p>Price: ${item.price.value} ${item.price.currency}</p>
+                            <a href="${item.itemWebUrl}" target="_blank">View on eBay</a>
+                        `;
+                        productList.appendChild(productDiv);
+                    });
+                } else {
+                    productList.innerHTML = '<p>No products found.</p>'; // Display a message if no products found
+                }
+            } catch (error) {
+                console.error('Error fetching products:', error);
+            }
+        }
+
+        function openAssistant() {
+            window.location.href = 'assistant.html'; // Redirect to the assistant chat page
+        }
+    </script>
+</body>
+
+</html>
