@@ -1,4 +1,4 @@
-// server.js
+// server.js — auth-only (signup/login) on http://localhost:4000
 import express from 'express';
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
@@ -12,22 +12,15 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 app.use(morgan('dev'));
+app.use(cors({ origin: (o, cb) => cb(null, true) }));
 
-// Allow local dev from file:// or any localhost static server
-app.use(
-  cors({
-    origin: (origin, cb) => cb(null, true), // reflect any origin (incl. null from file://)
-    credentials: false
-  })
-);
-
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/profai';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/profai';
 const PORT = process.env.PORT || 4000;
 
-// Health
+// health
 app.get('/healthz', (_, res) => res.status(200).send('ok'));
 
-// Sign up: create user with bcrypt hash
+// signup
 app.post('/api/signup', async (req, res) => {
   try {
     let { username, password } = req.body || {};
@@ -50,7 +43,7 @@ app.post('/api/signup', async (req, res) => {
   }
 });
 
-// Log in: verify bcrypt hash
+// login
 app.post('/api/login', async (req, res) => {
   try {
     let { username, password } = req.body || {};
@@ -63,7 +56,6 @@ app.post('/api/login', async (req, res) => {
     const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) return res.status(401).json({ message: 'Invalid credentials.' });
 
-    // Minimal response for now (no tokens yet)
     return res.json({ ok: true, username: user.username });
   } catch (e) {
     console.error(e);
@@ -72,13 +64,8 @@ app.post('/api/login', async (req, res) => {
 });
 
 async function start() {
-  try {
-    await mongoose.connect(MONGODB_URI);
-    console.log('MongoDB connected');
-    app.listen(PORT, () => console.log(`API listening on http://localhost:${PORT}`));
-  } catch (err) {
-    console.error('Failed to start server:', err.message);
-    process.exit(1);
-  }
+  await mongoose.connect(MONGODB_URI);
+  console.log('MongoDB connected');
+  app.listen(PORT, () => console.log(`API listening on http://localhost:${PORT}`));
 }
 start();
